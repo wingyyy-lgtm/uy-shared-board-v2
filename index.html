@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>UY共享背景板 V2 原型</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f7f9;color:#222}
+header{background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 24px;height:56px;gap:24px;position:sticky;top:0;z-index:5}
+header .logo{font-weight:700;font-size:18px}header nav a{cursor:pointer;margin-right:16px;color:#555}header nav a.on{color:#2563eb;font-weight:600}
+.wrap{display:flex;gap:20px;padding:20px 24px;max-width:1400px;margin:auto}main{flex:1;min-width:0}aside{width:320px;flex-shrink:0}
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:18px;margin-bottom:16px}
+.badge{display:inline-block;background:#7c3aed;color:#fff;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+button{border:none;border-radius:8px;padding:8px 16px;cursor:pointer;background:#2563eb;color:#fff;font-size:14px}button.ghost{background:#eef2ff;color:#2563eb}button.sm{padding:3px 8px;font-size:12px}button.red{background:#fee2e2;color:#b91c1c}
+textarea,input[type=text]{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:10px;font-size:14px;font-family:inherit}
+.big{height:110px;font-size:16px}.ex{display:inline-block;background:#f3f4f6;border-radius:16px;padding:6px 12px;margin:4px;cursor:pointer;font-size:13px}.ex:hover{background:#e0e7ff}
+.steps{display:flex;margin-bottom:16px}.steps div{flex:1;text-align:center;padding:8px;background:#e5e7eb;color:#666;font-size:13px}.steps div:first-child{border-radius:8px 0 0 8px}.steps div:last-child{border-radius:0 8px 8px 0}.steps div.done{background:#bfdbfe;color:#1e3a8a}.steps div.cur{background:#2563eb;color:#fff}
+.bg-item{border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin-bottom:8px;font-size:13px}.bg-item .ops{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.sync{background:#dcfce7;color:#166534;border-radius:6px;padding:6px 10px;font-size:13px;margin:8px 0}
+.task{display:flex;gap:8px;align-items:center;margin-bottom:8px}.task span.n{width:24px;font-weight:600}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.A{border-left:4px solid #2563eb}.B{border-left:4px solid #f97316}.tA{color:#2563eb;font-weight:600}.tB{color:#ea580c;font-weight:600}
+.ans{background:#fff;border-radius:8px;padding:10px;font-size:14px;line-height:1.6;min-height:60px;white-space:pre-wrap}
+.tag{font-size:12px;padding:2px 8px;border-radius:10px;margin-right:6px}.t1{background:#dcfce7;color:#166534}.t2{background:#fee2e2;color:#b91c1c}.t3{background:#fef3c7;color:#92400e}
+.cons li{background:#f0fdf4;border-left:4px solid #16a34a;padding:8px;margin:6px 0;list-style:none;border-radius:4px}ul.cons{padding:0}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #e5e7eb;padding:8px;vertical-align:top;text-align:left}th{background:#f9fafb}
+.fu{background:#f5f3ff;padding:6px;border-radius:6px;margin-top:6px;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9}.modal .card{width:460px}
+.hist{cursor:pointer}.hist:hover{background:#f9fafb}footer{text-align:center;font-size:12px;color:#999;padding:16px}
+.hidden{display:none}.row{display:flex;justify-content:space-between;align-items:center}
+</style></head><body>
+<header><div class="logo">UY共享背景板 V2</div><nav><a id="nav-home" class="on" onclick="go('home')">首页</a><a id="nav-hist" onclick="go('hist')">历史记录</a></nav></header>
+<div class="wrap"><main>
+<div class="steps" id="steps"></div>
+<section id="v-home" class="card">
+<h1 style="margin-top:0">UY共享背景板 V2</h1><p style="color:#555">两个 AI 独立回答、共享背景、互相审计，最后告诉你：哪里有共识，哪里有分歧。</p>
+<textarea id="q" class="big" placeholder="输入你想问的复杂问题…"></textarea>
+<div style="margin:10px 0">示例问题：<span class="ex">19岁、初中学历，想在杭州找AI产品实习，接下来一个月该怎么安排？</span><span class="ex">义乌小商品想做TikTok带货，先选哪个品类？</span><span class="ex">要不要花钱报一个AI产品经理培训班？</span></div>
+<button id="btn-start" onclick="startPlan()">开始</button>
+</section>
+<section id="v-plan" class="card hidden"><h2 style="margin-top:0">任务规划<span class="badge">V2新功能</span></h2><p style="color:#666;font-size:14px">AI 已把问题拆成以下子任务，你可以修改、删除、调整顺序后再确认。</p><div id="q-show" style="font-weight:600;margin-bottom:10px"></div><div id="tasks"></div><button class="ghost sm" onclick="addTask()">+ 添加子任务</button><div style="margin-top:14px"><button id="btn-confirm" onclick="startAnswer()">确认规划，开始回答</button></div></section>
+<section id="v-ans" class="hidden"><div class="card row"><h2 style="margin:0">双模型独立回答</h2><div><button class="ghost" id="btn-skip" onclick="skipAnim()">跳过动画</button> <button id="btn-toaudit" onclick="go('audit')">下一步：互审</button></div></div><div id="ans"></div></section>
+<section id="v-audit" class="hidden"><div class="card row"><h2 style="margin:0">互相审计</h2><button id="btn-toconc" onclick="go('conc')">下一步：查看结论</button></div><div class="cols" id="audit"></div></section>
+<section id="v-conc" class="hidden"><div class="card"><div class="row"><h2 style="margin:0">结论：共识与分歧<span class="badge">V2新功能</span></h2><button id="btn-save" onclick="saveHist()">保存到历史</button></div><div id="conc-q" style="color:#666;margin-top:6px"></div></div>
+<div class="card"><h3 style="margin-top:0;color:#16a34a">✔ 共识</h3><ul class="cons" id="cons"></ul></div>
+<div class="card"><h3 style="margin-top:0;color:#b91c1c">⚡ 分歧</h3><table><thead><tr><th style="width:20%">问题点</th><th><span class="tA">模型A</span>观点</th><th><span class="tB">模型B</span>观点</th><th style="width:80px"></th></tr></thead><tbody id="diff"></tbody></table></div>
+<div class="card"><h3 style="margin-top:0">建议的下一步</h3><ol id="next"></ol></div></section>
+<section id="v-hist" class="card hidden"><h2 style="margin-top:0">历史记录</h2><div id="hlist"></div></section>
+</main>
+<aside><div class="card" style="position:sticky;top:76px"><div class="row"><h3 style="margin:0">背景板</h3><span class="badge">V2新功能</span></div>
+<div class="sync" id="sync"></div>
+<div style="font-size:13px;margin-bottom:8px">历史版本：<select id="ver" onchange="loadVer()"><option value="0">v3 当前（10/21 10:40）</option><option value="1">v2（10/20 22:15）</option><option value="2">v1（10/18 15:02）</option></select></div>
+<div id="bglist"></div><button class="ghost" style="width:100%" onclick="addBg()">+ 添加背景</button></div></aside></div>
+<div class="modal" id="modal"><div class="card"><h3 style="margin-top:0">追问：<span id="m-title"></span></h3><textarea id="m-in" style="height:80px" placeholder="输入你的追问，两个 AI 会带着同一份背景继续讨论"></textarea><div style="margin-top:10px;text-align:right"><button class="ghost" onclick="closeM()">取消</button> <button id="m-send" onclick="sendM()">发送追问</button></div></div></div>
+<footer>原型由 AI 辅助生成｜需求、优先级与测试：王天翼</footer>
+<script>
+const Q0="19岁、初中学历，想在杭州找AI产品实习，接下来一个月该怎么安排？";
+const VERS=[[["19岁，初中学历",1],["做过商务酒水销售和TikTok混剪，单条破百万播放",1],["熟练使用GPT/Claude/DeepSeek等多种AI工具，作品均为AI辅助生成",1]],[["19岁，初中学历",1],["做过电商销售和TikTok混剪",1]],[["19岁，初中学历",1]]];
+let bg=VERS[0].map(x=>({t:x[0],on:!!x[1]}));
+let tasks=["梳理个人优势与短板","确定目标岗位与杭州公司清单","准备作品集（需求文档+原型）","制定投递与面试节奏"];
+const DATA=[
+{A:"你的优势是电商实战和爆款内容经验，加上多AI工具使用能力，这在AI应用岗里稀缺。短板是学历，简历初筛会吃亏，所以必须用作品来抵消。",B:"优势是真实销售能力和结果数据（百万播放）。短板是学历会被HR系统直接过滤，所以光靠线上投递不够，要找能绕过初筛的渠道。"},
+{A:"优先瞄准AI+电商、Agent评测类岗位：杭州的观猹、元狲等。岗位少而精，每家都要定制材料。",B:"别只盯几家，杭州AI应用、AI硬件（Rokid、镭萌）、电商SaaS都投，先把面试机会数量做上去，每周至少30家。"},
+{A:"第1-2周集中做作品：UY共享背景板 V2需求文档+可点击原型+一篇复盘。作品是你跟面试官对话的入场券。",B:"作品做一个够用就行，3-4天完成。不要追求完美，边投边改，面试官的反馈比自己闭门打磨更有用。"},
+{A:"第3-4周带作品精准投递，每天5家，附作品链接，并私信招聘负责人。",B:"从第1周就开始投递，同时去杭州线下参加AI活动、黑客松、创业者聚会，当面递作品，熟人内推比海投有效得多。"}];
+const AUDIT={A:[["同意","B指出学历会被系统过滤，这一点准确。"],["质疑","每周投30家会导致材料粗糙，命中率低，反而浪费时间。"],["补充","线下活动可以作为补充，但要先有作品才能递出去。"]],B:[["同意","A强调作品抵消学历劣势，方向正确。"],["质疑","先花两周做作品再投递太慢，11月中旬前要上岗，时间不够。"],["补充","建议作品同时做成一页作品集链接，方便线下快速展示。"]]};
+const CONS=["学历是最大短板，必须用作品和真实成果来抵消","电商销售+百万播放混剪是核心差异化，要写进每份材料","UY共享背景板 V2 需求文档+原型是最该先补的作品","简历里要写明作品为AI辅助生成，本人负责需求、优先级与测试"];
+let DIFF=[["作品与投递的先后","先花1-2周做好作品，再精准投递","作品3-4天够用，第1周就开始投"],["投递数量","每天5家，精准定制","每周30家以上，先拿面试量"],["渠道","线上投递+私信招聘负责人","线下活动、黑客松、内推为主"]].map(r=>({r,f:[]}));
+const NEXT=["今天完成需求文档定稿和可点击原型（双方共识）","本周内整理一页作品集链接","第1周先投10家最匹配的杭州公司，测试作品反馈（折中方案）","每周参加1次杭州线下AI活动","每周日复盘：投递数、回复率、面试数，调整策略"];
+let HIST=[{q:Q0,d:"2026-10-21",m:"模型A · 模型B"},{q:"义乌小商品想做TikTok带货，先选哪个品类？",d:"2026-10-19",m:"模型A · 模型B"},{q:"要不要花钱报一个AI产品经理培训班？",d:"2026-10-17",m:"模型A · 模型B"}];
+const ORDER=["home","plan","ans","audit","conc"],SN=["背景","规划","回答","互审","结论"];
+let cur="home",timers=[];
+function $(i){return document.getElementById(i)}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function go(v){cur=v;["home","plan","ans","audit","conc","hist"].forEach(x=>$("v-"+x).classList.toggle("hidden",x!==v));$("nav-home").classList.toggle("on",v!=="hist");$("nav-hist").classList.toggle("on",v==="hist");
+ const i=ORDER.indexOf(v);$("steps").style.display=v==="hist"?"none":"flex";$("steps").innerHTML=SN.map((s,k)=>`<div class="${k<i?'done':k===i?'cur':''}">${k+1}. ${s}</div>`).join("");
+ if(v==="audit")renderAudit();if(v==="conc")renderConc();if(v==="hist")renderHist();window.scrollTo(0,0)}
+function renderBg(){$("bglist").innerHTML=bg.map((b,i)=>`<div class="bg-item"><div contenteditable="true" oninput="bg[${i}].t=this.innerText">${esc(b.t)}</div><div class="ops"><label><input type="checkbox" ${b.on?"checked":""} onchange="bg[${i}].on=this.checked;renderSync()"> 是否同步给AI</label><button class="sm red" onclick="bg.splice(${i},1);renderBg()">删除</button></div></div>`).join("");renderSync()}
+function renderSync(){const n=bg.filter(b=>b.on).length;$("sync").textContent=`✔ ${n} 条背景已同步给2个AI（共 ${bg.length} 条）`}
+function addBg(){bg.push({t:"新背景：点击编辑",on:true});renderBg()}
+function loadVer(){bg=VERS[$("ver").value].map(x=>({t:x[0],on:!!x[1]}));renderBg()}
+document.querySelectorAll(".ex").forEach(e=>e.onclick=()=>$("q").value=e.textContent);
+function startPlan(){if(!$("q").value.trim())$("q").value=Q0;$("q-show").textContent="问题："+$("q").value;renderTasks();go("plan")}
+function renderTasks(){$("tasks").innerHTML=tasks.map((t,i)=>`<div class="task"><span class="n">${i+1}</span><input type="text" value="${esc(t)}" oninput="tasks[${i}]=this.value"><button class="sm ghost" onclick="mv(${i},-1)">↑</button><button class="sm ghost" onclick="mv(${i},1)">↓</button><button class="sm red" onclick="tasks.splice(${i},1);renderTasks()">删除</button></div>`).join("")}
+function mv(i,d){const j=i+d;if(j<0||j>=tasks.length)return;[tasks[i],tasks[j]]=[tasks[j],tasks[i]];renderTasks()}
+function addTask(){tasks.push("新子任务");renderTasks()}
+function getA(i){return DATA[i]||{A:"（示例数据）模型A针对该子任务的回答。",B:"（示例数据）模型B针对该子任务的回答。"}}
+function startAnswer(){timers.forEach(clearInterval);timers=[];
+ $("ans").innerHTML=tasks.map((t,i)=>`<div class="card"><b>子任务${i+1}：${esc(t)}</b><div class="cols" style="margin-top:10px"><div class="ans A"><div class="tA">模型A</div><span id="a${i}A"></span></div><div class="ans B"><div class="tB">模型B</div><span id="a${i}B"></span></div></div></div>`).join("");
+ go("ans");tasks.forEach((t,i)=>["A","B"].forEach(m=>{const s=getA(i)[m],el=$("a"+i+m);let k=0;const tm=setInterval(()=>{k+=2;el.textContent=s.slice(0,k);if(k>=s.length)clearInterval(tm)},30);timers.push(tm)}))}
+function skipAnim(){timers.forEach(clearInterval);timers=[];tasks.forEach((t,i)=>["A","B"].forEach(m=>{const el=$("a"+i+m);if(el)el.textContent=getA(i)[m]}))}
+function renderAudit(){const cls={同意:"t1",质疑:"t2",补充:"t3"};$("audit").innerHTML=[["A","B"],["B","A"]].map(([x,y])=>`<div class="card ${x}"><div class="t${x}">模型${x} 审计 模型${y}</div>${AUDIT[x].map(a=>`<p><span class="tag ${cls[a[0]]}">${a[0]}</span>${a[1]}</p>`).join("")}</div>`).join("")}
+function renderConc(q){$("conc-q").textContent="问题："+(q||$("q").value||Q0);$("cons").innerHTML=CONS.map(c=>`<li>${c}</li>`).join("");
+ $("diff").innerHTML=DIFF.map((d,i)=>`<tr><td><b>${d.r[0]}</b></td><td>${d.r[1]}</td><td>${d.r[2]}</td><td><button class="sm" onclick="openM(${i})">追问</button></td></tr>${d.f.map(f=>`<tr><td colspan="4"><div class="fu"><b>你追问：</b>${esc(f.q)}<br><span class="tA">模型A：</span>${f.a}<br><span class="tB">模型B：</span>${f.b}</div></td></tr>`).join("")}`).join("");
+ $("next").innerHTML=NEXT.map(n=>`<li style="margin:6px 0">${n}</li>`).join("")}
+let mi=0;function openM(i){mi=i;$("m-title").textContent=DIFF[i].r[0];$("m-in").value="";$("modal").style.display="flex"}
+function closeM(){$("modal").style.display="none"}
+function sendM(){const q=$("m-in").value.trim()||"能不能给一个折中方案？";DIFF[mi].f.push({q,a:"结合背景板信息，我仍建议先保证作品质量，但可以先投3-5家最匹配的公司试水。",b:"同意折中：作品做到能演示的程度就开始投，用面试反馈来决定下一步要补什么。"});closeM();renderConc()}
+function saveHist(){const q=$("q").value||Q0;if(!HIST.some(h=>h.q===q&&h.d==="2026-10-21"&&h.saved))HIST.unshift({q,d:"2026-10-21",m:"模型A · 模型B",saved:1});$("btn-save").textContent="已保存 ✔"}
+function renderHist(){$("hlist").innerHTML=HIST.map((h,i)=>`<div class="bg-item hist" onclick="openHist(${i})"><b>${esc(h.q)}</b><div style="color:#888;margin-top:4px">${h.d} ｜ 参与：${h.m}</div></div>`).join("")}
+function openHist(i){$("q").value=HIST[i].q;go("conc")}
+renderBg();go("home");
+</script></body></html>
